@@ -1,6 +1,8 @@
 # Markdown Preview
 
 Instance Markdown preview support for vim.
+Thanks for [lepture/mistune](https://github.com/lepture/mistune)
+(The fastest markdown parser in pure Python with renderer feature, inspired by marked and misaka).
 There is no external dependencies, and only vim with python enabled (`+python`) is required.
 
 # Install
