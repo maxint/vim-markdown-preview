@@ -5,7 +5,8 @@ nnoremap <buffer> <leader>P :MarkdownPreview<CR>
 
 if g:markdown_preview_autostart
     augroup MarkdownPreview
-        au BufEnter     <buffer> call MarkdownPreview#EnterBuffer()
+        au BufEnter <buffer> call MarkdownPreview#Add()
+        au BufUnload,BufDelete <buffer> call MarkdownPreview#Remove()
         if g:markdown_preview_slow
             au BufWrite,InsertLeave <buffer> call MarkdownPreview#DoIfNeeded()
         else

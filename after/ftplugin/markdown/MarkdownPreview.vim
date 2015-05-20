@@ -71,20 +71,48 @@ def markdown_preview_wrap_html(title, css, js, html):
 </html>
 '''.format(title, wrap_css(css), fileurl(js), html)
 
+def markdown_preview_root_dir():
+    return os.path.join(tempfile.gettempdir(), 'markdown-preview')
+
 def get_buffer_name():
     name = vim.current.buffer.name
     return os.path.basename(name) if name else "NoName.md"
 
-def markdown_preview_enter_buffer():
+def get_unused_path(rootdir, basename):
+    path = os.path.join(rootdir, basename + '.html')
+    i = 1
+    while os.path.exists(path):
+        path = os.path.join(rootdir, basename + '_' + str(i) + '.html')
+        i += 1
+    return path
+
+def markdown_preview_add():
     curbuf = vim.current.buffer
-    html_path = os.path.join(tempfile.gettempdir(), get_buffer_name() + '.html')
-    curbuf.vars['markdown_preview_path'] = html_path
+    rootdir = markdown_preview_root_dir()
+    if not os.path.exists(rootdir):
+        os.makedirs(rootdir)
+    curbuf.vars['markdown_preview_path'] = get_unused_path(rootdir, get_buffer_name())
+
+def markdown_preview_remove():
+    if 'markdown_preview_path' in vim.current.buffer.vars:
+        path = vim.current.buffer.vars['markdown_preview_path']
+        if os.path.exists(path):
+            os.remove(path)
+
+def markdown_preivew_generate_header():
+    curbuf = vim.current.buffer
+    return '''<table>
+    <tr><td>path</td><td>last modified</td></tr>
+    <tr><td>{}</td><td>{}</td></tr>
+</table>
+'''.format(curbuf.name, time.strftime('%a, %d %b %Y %H:%M:%S'))
 
 def markdown_preview_generate():
     curbuf = vim.current.buffer
     text = '\n'.join(curbuf[:])
     title = '[Markdown Preview] ' + get_buffer_name()
     html = mistune.markdown(text)
+    html = markdown_preivew_generate_header() + html
     html = markdown_preview_wrap_html(title,
                                       vim.vars['markdown_preview_css'],
                                       vim.vars['markdown_preview_js'],
@@ -115,11 +143,19 @@ EOF
 endfunction
 
 
-function! MarkdownPreview#EnterBuffer()
+function! MarkdownPreview#Add()
 python << EOF
-markdown_preview_enter_buffer()
-markdown_preview_generate()
-markdown_preview_open_browser()
+if 'markdown_preview_path' not in vim.current.buffer.vars:
+    markdown_preview_add()
+    markdown_preview_generate()
+    markdown_preview_open_browser()
+EOF
+endfunction
+
+
+function! MarkdownPreview#Remove()
+python << EOF
+markdown_preview_remove()
 EOF
 endfunction
 
