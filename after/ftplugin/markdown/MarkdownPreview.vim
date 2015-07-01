@@ -123,7 +123,7 @@ def markdown_preview_generate():
 
 def markdown_preview_generate_after(seconds):
     curbuf = vim.current.buffer
-    last_time = curbuf.vars['markdown_preview_last_generated_time']
+    last_time = curbuf.vars.get('markdown_preview_last_generated_time', 0)
     if time.time() - last_time > seconds:
         markdown_preview_generate()
 
