@@ -41,6 +41,7 @@ if not hasattr(vim, 'VIM_SPECIAL_PATH'):
 import mistune
 import tempfile
 import time
+import subprocess
 
 def markdown_preview_wrap_html(title, css, js, html):
     def fileurl(path):
@@ -76,7 +77,7 @@ def markdown_preview_root_dir():
 
 def get_buffer_name():
     name = vim.current.buffer.name
-    return os.path.basename(name) if name else "NoName.md"
+    return os.path.basename(name) if name else "NotTitled.md"
 
 def get_unused_path(rootdir, basename):
     path = os.path.join(rootdir, basename + '.html')
@@ -129,23 +130,31 @@ def markdown_preview_generate_after(seconds):
 
 def markdown_preview_open_browser():
     curbuf = vim.current.buffer
-    curbuf.vars['markdown_preview_opened'] = 1
+    curbuf.vars['markdown_preview_browser_opened'] = 1
     url = curbuf.vars['markdown_preview_path']
     try:
         if os.name == 'nt':
             os.startfile(url)
         else:
-            os.system('open "{}"'.format(url))
+            try:
+                subprocess.check_call('open "{}"'.format(url))
+            except:
+                try:
+                    subprocess.check_call('firefox "{}"'.format(url), shell=True)
+                except:
+                    subprocess.check_call('chromium "{}"'.format(url), shell=True)
     except:
-        print 'Please open "{}" in browser manually'.format(url)
+        print('Please open "{}" in browser manually'.format(url))
 
 EOF
 endfunction
 
 
-function! MarkdownPreview#Add()
+function! MarkdownPreview#Update()
 python << EOF
-if 'markdown_preview_path' not in vim.current.buffer.vars:
+if 'markdown_preview_path' in vim.current.buffer.vars:
+    markdown_preview_generate()
+else:
     markdown_preview_add()
     markdown_preview_generate()
     markdown_preview_open_browser()
@@ -160,14 +169,7 @@ EOF
 endfunction
 
 
-function! MarkdownPreview#Do()
-python << EOF
-markdown_preview_generate()
-EOF
-endfunction
-
-
-function! MarkdownPreview#DoIfNeeded()
+function! MarkdownPreview#UpdateIfNeeded()
 python << EOF
 freq_ms = float(vim.vars['markdown_preview_frequency_ms'])
 markdown_preview_generate_after(freq_ms*0.001)
@@ -179,13 +181,6 @@ function! MarkdownPreview#OpenBrowser()
 python << EOF
 markdown_preview_open_browser()
 EOF
-endfunction
-
-
-function! MarkdownPreview#OpenBrowserIfNeeded()
-    if !exists('b:markdown_preview_opened') || !b:markdown_preview_opened
-        call MarkdownPreview#OpenBrowser()
-    endif
 endfunction
 
 
